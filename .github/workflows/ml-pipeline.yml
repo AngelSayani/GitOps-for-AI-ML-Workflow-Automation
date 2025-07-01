@@ -1,0 +1,23 @@
+name: ML Infrastructure Pipeline
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy Services
+        run: |
+          docker-compose up -d
+          sleep 10
+          ./configure-minio.sh
+          ./weaviate-schema.sh
+          
+      - name: Test Services
+        run: |
+          curl -I http://localhost:9000/minio/health/live
+          curl http://localhost:8080/v1/meta
