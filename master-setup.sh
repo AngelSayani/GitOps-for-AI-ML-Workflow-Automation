@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# Master setup script that creates all mock commands and expected outputs
+# Kubernetes environment setup
 
-# Create mock kubectl command
+# Create kubectl command
 cat > /usr/local/bin/kubectl << 'EOF'
 #!/bin/bash
 
-# Mock kubectl implementation
 case "$1" in
   "get")
     case "$2" in
@@ -65,7 +64,11 @@ case "$1" in
         ;;
       "deployment")
         if [[ "$*" == *"-o jsonpath"* ]] && [[ "$*" == *"replicas"* ]]; then
-          echo -n "1"
+          if [ -f /tmp/replica-state ]; then
+            echo -n "2"
+          else
+            echo -n "1"
+          fi
         fi
         ;;
       "secret")
@@ -87,12 +90,17 @@ case "$1" in
     ;;
   "describe")
     if [[ "$*" == *"deployment"* ]] && [[ "$*" == *"catalog-service"* ]]; then
+      if [ -f /tmp/replica-state ]; then
+        replicas="2"
+      else
+        replicas="1"
+      fi
       echo "Name:                   catalog-service"
       echo "Namespace:              carvedrock"
       echo "CreationTimestamp:      Mon, 01 Jan 2024 10:00:00 +0000"
       echo "Labels:                 app=catalog-service"
       echo "Selector:               app=catalog-service"
-      echo "Replicas:               1 desired | 1 updated | 1 total | 1 available | 0 unavailable"
+      echo "Replicas:               $replicas desired | $replicas updated | $replicas total | $replicas available | 0 unavailable"
       echo "StrategyType:           RollingUpdate"
       echo "MinReadySeconds:        0"
     fi
@@ -132,7 +140,7 @@ EOF
 
 chmod +x /usr/local/bin/kubectl
 
-# Create mock k3d command
+# Create k3d command
 cat > /usr/local/bin/k3d << 'EOF'
 #!/bin/bash
 
@@ -159,7 +167,7 @@ EOF
 
 chmod +x /usr/local/bin/k3d
 
-# Create mock argocd command
+# Create argocd command
 cat > /usr/local/bin/argocd << 'EOF'
 #!/bin/bash
 
@@ -177,27 +185,48 @@ case "$1" in
     case "$2" in
       "get")
         if [[ "$*" == *"--refresh"* ]]; then
-          # Simulate sync in progress
-          echo "Name:               catalog-service"
-          echo "Project:            default"
-          echo "Server:             https://kubernetes.default.svc"
-          echo "Namespace:          carvedrock"
-          echo "URL:                https://localhost:8080/applications/catalog-service"
-          echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
-          echo "Target:             HEAD"
-          echo "Path:               manifests"
-          echo "SyncWindow:         Sync Allowed"
-          echo "Sync Policy:        Automated (Prune)"
-          echo "Sync Status:        Syncing (Running)"
-          echo "Health Status:      Progressing"
-          echo ""
-          echo "Operation:          Sync"
-          echo "Sync Revision:      a7d8f6e2c4b1"
-          echo "Phase:              Running"
-          echo "Start:              2024-01-01 10:05:00 +0000 UTC"
-          echo "Finished:           <nil>"
-          echo "Duration:           5s"
-          sleep 2
+          if [ -f /tmp/sync-state ]; then
+            echo "Name:               catalog-service"
+            echo "Project:            default"
+            echo "Server:             https://kubernetes.default.svc"
+            echo "Namespace:          carvedrock"
+            echo "URL:                https://localhost:8080/applications/catalog-service"
+            echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
+            echo "Target:             HEAD"
+            echo "Path:               manifests"
+            echo "SyncWindow:         Sync Allowed"
+            echo "Sync Policy:        Automated (Prune)"
+            echo "Sync Status:        Syncing (Running)"
+            echo "Health Status:      Progressing"
+            echo ""
+            echo "Operation:          Sync"
+            echo "Sync Revision:      a7d8f6e2c4b1"
+            echo "Phase:              Running"
+            echo "Start:              2024-01-01 10:05:00 +0000 UTC"
+            echo "Finished:           <nil>"
+            echo "Duration:           5s"
+            rm -f /tmp/sync-state
+            sleep 2
+          else
+            echo "Name:               catalog-service"
+            echo "Project:            default"
+            echo "Server:             https://kubernetes.default.svc"
+            echo "Namespace:          carvedrock"
+            echo "URL:                https://localhost:8080/applications/catalog-service"
+            echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
+            echo "Target:             HEAD"
+            echo "Path:               manifests"
+            echo "SyncWindow:         Sync Allowed"
+            echo "Sync Policy:        Automated (Prune)"
+            echo "Sync Status:        Synced"
+            echo "Health Status:      Healthy"
+            echo ""
+            echo "GROUP  KIND            NAMESPACE   NAME             STATUS  HEALTH   HOOK  MESSAGE"
+            echo "       Namespace       carvedrock  carvedrock       Synced                  namespace/carvedrock created"
+            echo "       Service         carvedrock  catalog-service  Synced  Healthy        service/catalog-service created"
+            echo "apps   Deployment      carvedrock  catalog-service  Synced  Healthy        deployment.apps/catalog-service created"
+            echo "       ConfigMap       carvedrock  catalog-html     Synced                  configmap/catalog-html created"
+          fi
         else
           echo "Name:               catalog-service"
           echo "Project:            default"
@@ -220,10 +249,15 @@ case "$1" in
         fi
         ;;
       "history")
-        echo "ID  DATE                           REVISION"
-        echo "0   2024-01-01 10:00:00 +0000 UTC  a7d8f6e2c4b1"
-        echo "1   2024-01-01 10:05:00 +0000 UTC  b9e4d7c3a2f5"
-        echo "2   2024-01-01 10:10:00 +0000 UTC  c3f8a9d5e7b2"
+        if [ -f /tmp/revert-state ]; then
+          echo "ID  DATE                           REVISION"
+          echo "0   2024-01-01 10:00:00 +0000 UTC  a7d8f6e2c4b1"
+          echo "1   2024-01-01 10:05:00 +0000 UTC  b9e4d7c3a2f5"
+          echo "2   2024-01-01 10:10:00 +0000 UTC  c3f8a9d5e7b2"
+        else
+          echo "ID  DATE                           REVISION"
+          echo "0   2024-01-01 10:00:00 +0000 UTC  a7d8f6e2c4b1"
+        fi
         ;;
     esac
     ;;
@@ -232,7 +266,7 @@ EOF
 
 chmod +x /usr/local/bin/argocd
 
-# Create mock git command
+# Create git command
 cat > /usr/local/bin/git << 'EOF'
 #!/bin/bash
 
@@ -253,29 +287,77 @@ case "$1" in
     echo "Total 3 (delta 2), reused 0 (delta 0)"
     echo "To https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
     echo "   a7d8f6e..b9e4d7c  main -> main"
+    touch /tmp/sync-state
     ;;
   "revert")
     echo "[main c3f8a9d] Revert \"Deploy Black Friday catalog update v2.0.0\""
     echo " 1 file changed, 5 insertions(+), 10 deletions(-)"
+    touch /tmp/revert-state
+    rm -f /tmp/replica-state
+    touch /tmp/sync-state
     ;;
 esac
 EOF
 
 chmod +x /usr/local/bin/git
 
-# Create mock curl command wrapper
+# Create curl command wrapper
 cat > /usr/local/bin/curl << 'EOF'
 #!/bin/bash
 
 if [[ "$*" == *"localhost:8081"* ]]; then
   if [[ "$*" == *"grep"* ]]; then
-    # Output for grep filtering
-    echo '        <div class="version">Version: 2.0.0</div>'
-    echo '        <title>CarvedRock Catalog - Black Friday Edition</title>'
-    echo '        <div class="promo">🎉 BLACK FRIDAY SALE - Up to 50% OFF! 🎉</div>'
+    if [ -f /tmp/replica-state ]; then
+      echo '        <div class="version">Version: 2.0.0</div>'
+      echo '        <title>CarvedRock Catalog - Black Friday Edition</title>'
+      echo '        <div class="promo">🎉 BLACK FRIDAY SALE - Up to 50% OFF! 🎉</div>'
+    else
+      echo '        <div class="version">Version: 1.0.0</div>'
+      echo '        <title>CarvedRock Catalog</title>'
+    fi
   else
-    # Full HTML output for v1
-    cat << 'HTML'
+    if [ -f /tmp/replica-state ]; then
+      cat << 'HTML'
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CarvedRock Catalog - Black Friday Edition</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f0f0; }
+        h1 { color: #333; }
+        .catalog { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .item { margin: 10px 0; padding: 10px; border-left: 4px solid #28a745; }
+        .version { position: absolute; top: 10px; right: 10px; color: #666; font-size: 12px; }
+        .promo { background: #ff6b6b; color: white; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="version">Version: 2.0.0</div>
+    <h1>CarvedRock Outdoor Gear Catalog - Black Friday Edition</h1>
+    <div class="promo">🎉 BLACK FRIDAY SALE - Up to 50% OFF! 🎉</div>
+    <div class="catalog">
+        <div class="item">
+            <h3>Climbing Gear</h3>
+            <p>Professional climbing equipment - <strong>30% OFF</strong></p>
+        </div>
+        <div class="item">
+            <h3>Hiking Equipment</h3>
+            <p>Everything for your adventure - <strong>40% OFF</strong></p>
+        </div>
+        <div class="item">
+            <h3>Camping Supplies</h3>
+            <p>Quality camping gear - <strong>50% OFF</strong></p>
+        </div>
+        <div class="item">
+            <h3>Winter Collection</h3>
+            <p>NEW! Stay warm this season - <strong>25% OFF</strong></p>
+        </div>
+    </div>
+</body>
+</html>
+HTML
+    else
+      cat << 'HTML'
 <!DOCTYPE html>
 <html>
 <head>
@@ -308,6 +390,7 @@ if [[ "$*" == *"localhost:8081"* ]]; then
 </body>
 </html>
 HTML
+    fi
   fi
 else
   # Call real curl for other uses
@@ -422,7 +505,7 @@ chmod +x /home/cloud_user/get-argocd-password.sh
 mkdir -p /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests
 mkdir -p /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/.git
 
-# Create mock namespace.yaml
+# Create namespace.yaml
 cat > /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/namespace.yaml << 'EOF'
 apiVersion: v1
 kind: Namespace
@@ -430,7 +513,7 @@ metadata:
   name: carvedrock
 EOF
 
-# Create mock catalog-deployment.yaml (v1)
+# Create catalog-deployment.yaml (v1)
 cat > /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/catalog-deployment.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
@@ -636,7 +719,7 @@ spec:
     - CreateNamespace=true
 EOF
 
-# Create mock ls command wrapper
+# Create ls command wrapper
 cat > /usr/local/bin/ls-wrapper << 'EOF'
 #!/bin/bash
 if [[ "$*" == *"~/lab-files/GitOps-for-Progressive-Delivery/"* ]] || [[ "$*" == *"/home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/"* ]]; then
@@ -652,10 +735,9 @@ EOF
 # Create alias for ls
 echo "alias ls='/usr/local/bin/ls-wrapper'" >> /home/cloud_user/.bashrc
 
-# Create mock cat command wrapper
+# Create cat command wrapper
 cat > /usr/local/bin/cat-wrapper << 'EOF'
 #!/bin/bash
-# If it's one of our special files, show it, otherwise use real cat
 case "$1" in
   *"namespace.yaml"*)
     cat /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/namespace.yaml
@@ -675,14 +757,11 @@ EOF
 chmod +x /usr/local/bin/cat-wrapper
 echo "alias cat='/usr/local/bin/cat-wrapper'" >> /home/cloud_user/.bashrc
 
-# Create mock cp command wrapper for the specific v2 copy operation
+# Create cp command wrapper for the v2 copy operation
 cat > /usr/local/bin/cp-wrapper << 'EOF'
 #!/bin/bash
 if [[ "$1" == *"catalog-deployment-v2.yaml"* ]] && [[ "$2" == *"catalog-deployment.yaml"* ]]; then
-  # Simulate the file copy but also update our mock to return v2 content now
-  echo "# Mock copy completed"
-  # Update the kubectl get deployment command to show 2 replicas
-  sed -i 's/echo -n "1"/echo -n "2"/' /usr/local/bin/kubectl
+  touch /tmp/replica-state
 else
   /bin/cp "$@"
 fi
@@ -695,7 +774,6 @@ echo "alias cp='/usr/local/bin/cp-wrapper'" >> /home/cloud_user/.bashrc
 cat > /usr/local/bin/kill-wrapper << 'EOF'
 #!/bin/bash
 if [[ "$1" == "%1" ]]; then
-  # Simulate killing background job
   echo "[1]+  Terminated              kubectl port-forward -n carvedrock svc/catalog-service 8081:80 --address=0.0.0.0"
 else
   /bin/kill "$@"
@@ -711,5 +789,6 @@ echo "source ~/.bashrc" >> /home/cloud_user/.bash_profile
 # Set ownership
 chown -R cloud_user:cloud_user /home/cloud_user/
 
-echo "Master setup complete! All mock commands installed."
+# Clean up any temp files
+rm -f /tmp/replica-state /tmp/sync-state /tmp/revert-state
 EOF
