@@ -118,11 +118,28 @@ case "$1" in
     ;;
   "port-forward")
     if [[ "$*" == *"catalog-service"* ]]; then
-      echo "Forwarding from 0.0.0.0:8081 -> 80"
-      echo "Handling connection for 8081"
+      # Check if port is already in use
+      if lsof -Pi :8081 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "error: unable to listen on any of the requested ports: [{8081 80}]"
+        exit 1
+      else
+        echo "Forwarding from 0.0.0.0:8081 -> 80"
+        echo "Handling connection for 8081" &
+        # Create a dummy process to hold the port
+        (while true; do sleep 3600; done) >/dev/null 2>&1 &
+        echo $! > /tmp/port-forward-8081.pid
+      fi
     elif [[ "$*" == *"argocd-server"* ]]; then
-      echo "Forwarding from 0.0.0.0:8080 -> 8080"
-      echo "Handling connection for 8080"
+      if lsof -Pi :8080 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "error: unable to listen on any of the requested ports: [{8080 443}]"
+        exit 1
+      else
+        echo "Forwarding from 0.0.0.0:8080 -> 8080"
+        echo "Handling connection for 8080" &
+        # Create a dummy process to hold the port
+        (while true; do sleep 3600; done) >/dev/null 2>&1 &
+        echo $! > /tmp/port-forward-8080.pid
+      fi
     fi
     ;;
   "-n")
