@@ -118,11 +118,11 @@ case "$1" in
     ;;
   "port-forward")
     if [[ "$*" == *"catalog-service"* ]]; then
-      echo "Forwarding from 0.0.0.0:8081 -> 80" &
-      sleep 1
+      echo "Forwarding from 0.0.0.0:8081 -> 80"
+      echo "Handling connection for 8081"
     elif [[ "$*" == *"argocd-server"* ]]; then
-      echo "Forwarding from 0.0.0.0:8080 -> 8080" &
-      sleep 1
+      echo "Forwarding from 0.0.0.0:8080 -> 8080"
+      echo "Handling connection for 8080"
     fi
     ;;
   "-n")
@@ -178,9 +178,7 @@ case "$1" in
     ;;
   "repo")
     if [[ "$2" == "add" ]]; then
-      # Extract just the repo name from any URL
-      repo_name=$(echo "$3" | sed 's/.*\///' | sed 's/\.git$//')
-      echo "Repository '$repo_name' added"
+      echo "Repository 'https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git' added"
     fi
     ;;
   "app")
@@ -193,7 +191,7 @@ case "$1" in
             echo "Server:             https://kubernetes.default.svc"
             echo "Namespace:          carvedrock"
             echo "URL:                https://localhost:8080/applications/catalog-service"
-            echo "Repo:               catalog-service"
+            echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
             echo "Target:             HEAD"
             echo "Path:               manifests"
             echo "SyncWindow:         Sync Allowed"
@@ -215,7 +213,7 @@ case "$1" in
             echo "Server:             https://kubernetes.default.svc"
             echo "Namespace:          carvedrock"
             echo "URL:                https://localhost:8080/applications/catalog-service"
-            echo "Repo:               catalog-service"
+            echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
             echo "Target:             HEAD"
             echo "Path:               manifests"
             echo "SyncWindow:         Sync Allowed"
@@ -235,7 +233,7 @@ case "$1" in
           echo "Server:             https://kubernetes.default.svc"
           echo "Namespace:          carvedrock"
           echo "URL:                https://localhost:8080/applications/catalog-service"
-          echo "Repo:               https://git.carvedrock.internal/gitops/catalog-service.git"
+          echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
           echo "Target:             HEAD"
           echo "Path:               manifests"
           echo "SyncWindow:         Sync Allowed"
@@ -287,7 +285,7 @@ case "$1" in
     echo "Compressing objects: 100% (3/3), done."
     echo "Writing objects: 100% (3/3), 512 bytes | 512.00 KiB/s, done."
     echo "Total 3 (delta 2), reused 0 (delta 0)"
-    echo "To repository"
+    echo "To https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
     echo "   a7d8f6e..b9e4d7c  main -> main"
     touch /tmp/sync-state
     ;;
@@ -497,7 +495,7 @@ chmod +x /home/cloud_user/argocd-port-forward.sh
 cat > /home/cloud_user/get-argocd-password.sh << 'EOF'
 #!/bin/bash
 echo "ArgoCD admin password:"
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+echo "AdminPassword123!"
 echo ""
 EOF
 
@@ -707,7 +705,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://git.carvedrock.internal/gitops/catalog-service.git
+    repoURL: https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git
     targetRevision: HEAD
     path: manifests
   destination:
@@ -793,3 +791,4 @@ chown -R cloud_user:cloud_user /home/cloud_user/
 
 # Clean up any temp files
 rm -f /tmp/replica-state /tmp/sync-state /tmp/revert-state
+EOF
