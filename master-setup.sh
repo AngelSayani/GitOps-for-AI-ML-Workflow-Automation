@@ -2,6 +2,10 @@
 
 # Kubernetes environment setup
 
+# Fix locale warnings
+export LC_ALL=C
+export LANG=C
+
 # Create kubectl command
 cat > /usr/local/bin/kubectl << 'EOF'
 #!/bin/bash
@@ -230,33 +234,6 @@ EOF
 
 chmod +x /usr/local/bin/kubectl
 
-# Create k3d command
-cat > /usr/local/bin/k3d << 'EOF'
-#!/bin/bash
-
-if [[ "$*" == *"cluster create"* ]]; then
-  echo "INFO[0000] Prep: Network"
-  echo "INFO[0000] Created network 'k3d-gitops-lab'"
-  echo "INFO[0000] Created image volume k3d-gitops-lab-images"
-  echo "INFO[0001] Starting new tools node..."
-  echo "INFO[0002] Creating node 'k3d-gitops-lab-server-0'"
-  echo "INFO[0005] Creating node 'k3d-gitops-lab-agent-0'"
-  echo "INFO[0005] Creating node 'k3d-gitops-lab-agent-1'"
-  echo "INFO[0006] Creating LoadBalancer 'k3d-gitops-lab-serverlb'"
-  echo "INFO[0010] Starting cluster 'gitops-lab'"
-  echo "INFO[0010] Starting servers..."
-  echo "INFO[0010] Starting Node 'k3d-gitops-lab-server-0'"
-  echo "INFO[0020] Starting agents..."
-  echo "INFO[0020] Starting Node 'k3d-gitops-lab-agent-0'"
-  echo "INFO[0020] Starting Node 'k3d-gitops-lab-agent-1'"
-  echo "INFO[0025] Starting helpers..."
-  echo "INFO[0025] Starting Node 'k3d-gitops-lab-serverlb'"
-  echo "INFO[0030] Cluster 'gitops-lab' created successfully!"
-fi
-EOF
-
-chmod +x /usr/local/bin/k3d
-
 # Create argocd command
 cat > /usr/local/bin/argocd << 'EOF'
 #!/bin/bash
@@ -395,8 +372,27 @@ chmod +x /usr/local/bin/git
 cat > /home/cloud_user/setup.sh << 'EOF'
 #!/bin/bash
 echo "Starting k3d cluster setup..."
-k3d cluster create gitops-lab --api-port 6550 -p "8081:80@loadbalancer" --agents 2
-kubectl cluster-info
+# Just show the expected output
+echo "INFO[0000] Prep: Network"
+echo "INFO[0000] Created network 'k3d-gitops-lab'"
+echo "INFO[0000] Created image volume k3d-gitops-lab-images"
+echo "INFO[0001] Starting new tools node..."
+echo "INFO[0002] Creating node 'k3d-gitops-lab-server-0'"
+echo "INFO[0005] Creating node 'k3d-gitops-lab-agent-0'"
+echo "INFO[0005] Creating node 'k3d-gitops-lab-agent-1'"
+echo "INFO[0006] Creating LoadBalancer 'k3d-gitops-lab-serverlb'"
+echo "INFO[0010] Starting cluster 'gitops-lab'"
+echo "INFO[0010] Starting servers..."
+echo "INFO[0010] Starting Node 'k3d-gitops-lab-server-0'"
+echo "INFO[0020] Starting agents..."
+echo "INFO[0020] Starting Node 'k3d-gitops-lab-agent-0'"
+echo "INFO[0020] Starting Node 'k3d-gitops-lab-agent-1'"
+echo "INFO[0025] Starting helpers..."
+echo "INFO[0025] Starting Node 'k3d-gitops-lab-serverlb'"
+echo "INFO[0030] Cluster 'gitops-lab' created successfully!"
+echo "Kubernetes control plane is running at https://127.0.0.1:6550"
+echo "CoreDNS is running at https://127.0.0.1:6550/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy"
+echo "Metrics-server is running at https://127.0.0.1:6550/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxy"
 echo "Cluster setup complete!"
 EOF
 
