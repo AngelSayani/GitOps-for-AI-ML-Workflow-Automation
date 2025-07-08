@@ -118,11 +118,11 @@ case "$1" in
     ;;
   "port-forward")
     if [[ "$*" == *"catalog-service"* ]]; then
-      echo "Forwarding from 0.0.0.0:8081 -> 80"
-      echo "Handling connection for 8081"
+      echo "Forwarding from 0.0.0.0:8081 -> 80" &
+      sleep 1
     elif [[ "$*" == *"argocd-server"* ]]; then
-      echo "Forwarding from 0.0.0.0:8080 -> 8080"
-      echo "Handling connection for 8080"
+      echo "Forwarding from 0.0.0.0:8080 -> 8080" &
+      sleep 1
     fi
     ;;
   "-n")
@@ -495,7 +495,7 @@ chmod +x /home/cloud_user/argocd-port-forward.sh
 cat > /home/cloud_user/get-argocd-password.sh << 'EOF'
 #!/bin/bash
 echo "ArgoCD admin password:"
-echo "AdminPassword123!"
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 echo ""
 EOF
 
