@@ -178,7 +178,7 @@ case "$1" in
     ;;
   "repo")
     if [[ "$2" == "add" ]]; then
-      echo "Repository 'https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git' added"
+      echo "Repository 'https://git.carvedrock.internal/gitops/catalog-service.git' added"
     fi
     ;;
   "app")
@@ -191,7 +191,7 @@ case "$1" in
             echo "Server:             https://kubernetes.default.svc"
             echo "Namespace:          carvedrock"
             echo "URL:                https://localhost:8080/applications/catalog-service"
-            echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
+            echo "Repo:               https://git.carvedrock.internal/gitops/catalog-service.git"
             echo "Target:             HEAD"
             echo "Path:               manifests"
             echo "SyncWindow:         Sync Allowed"
@@ -213,7 +213,7 @@ case "$1" in
             echo "Server:             https://kubernetes.default.svc"
             echo "Namespace:          carvedrock"
             echo "URL:                https://localhost:8080/applications/catalog-service"
-            echo "Repo:               https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
+            echo "Repo:               https://git.carvedrock.internal/gitops/catalog-service.git"
             echo "Target:             HEAD"
             echo "Path:               manifests"
             echo "SyncWindow:         Sync Allowed"
@@ -285,7 +285,7 @@ case "$1" in
     echo "Compressing objects: 100% (3/3), done."
     echo "Writing objects: 100% (3/3), 512 bytes | 512.00 KiB/s, done."
     echo "Total 3 (delta 2), reused 0 (delta 0)"
-    echo "To https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git"
+    echo "To https://git.carvedrock.internal/gitops/catalog-service.git"
     echo "   a7d8f6e..b9e4d7c  main -> main"
     touch /tmp/sync-state
     ;;
@@ -502,11 +502,11 @@ EOF
 chmod +x /home/cloud_user/get-argocd-password.sh
 
 # Create lab file structure
-mkdir -p /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests
-mkdir -p /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/.git
+mkdir -p /home/cloud_user/lab-files/catalog-service/manifests
+mkdir -p /home/cloud_user/lab-files/catalog-service/.git
 
 # Create namespace.yaml
-cat > /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/namespace.yaml << 'EOF'
+cat > /home/cloud_user/lab-files/catalog-service/manifests/namespace.yaml << 'EOF'
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -514,7 +514,7 @@ metadata:
 EOF
 
 # Create catalog-deployment.yaml (v1)
-cat > /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/catalog-deployment.yaml << 'EOF'
+cat > /home/cloud_user/lab-files/catalog-service/manifests/catalog-deployment.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -602,7 +602,7 @@ data:
 EOF
 
 # Create v2 deployment file
-cat > /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/catalog-deployment-v2.yaml << 'EOF'
+cat > /home/cloud_user/lab-files/catalog-service/catalog-deployment-v2.yaml << 'EOF'
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -696,7 +696,7 @@ data:
 EOF
 
 # Create ArgoCD application file
-cat > /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/argocd-application.yaml << 'EOF'
+cat > /home/cloud_user/lab-files/catalog-service/argocd-application.yaml << 'EOF'
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -705,7 +705,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/AngelSayani/GitOps-for-Progressive-Delivery.git
+    repoURL: https://git.carvedrock.internal/gitops/catalog-service.git
     targetRevision: HEAD
     path: manifests
   destination:
@@ -722,7 +722,7 @@ EOF
 # Create ls command wrapper
 cat > /usr/local/bin/ls-wrapper << 'EOF'
 #!/bin/bash
-if [[ "$*" == *"~/lab-files/GitOps-for-Progressive-Delivery/"* ]] || [[ "$*" == *"/home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/"* ]]; then
+if [[ "$*" == *"~/lab-files/catalog-service/"* ]] || [[ "$*" == *"/home/cloud_user/lab-files/catalog-service/"* ]]; then
   echo "argocd-application.yaml"
   echo "catalog-deployment-v2.yaml"
   echo "manifests"
@@ -740,13 +740,13 @@ cat > /usr/local/bin/cat-wrapper << 'EOF'
 #!/bin/bash
 case "$1" in
   *"namespace.yaml"*)
-    cat /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/namespace.yaml
+    cat /home/cloud_user/lab-files/catalog-service/manifests/namespace.yaml
     ;;
   *"catalog-deployment.yaml"*)
-    cat /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/manifests/catalog-deployment.yaml
+    cat /home/cloud_user/lab-files/catalog-service/manifests/catalog-deployment.yaml
     ;;
   *"argocd-application.yaml"*)
-    cat /home/cloud_user/lab-files/GitOps-for-Progressive-Delivery/argocd-application.yaml
+    cat /home/cloud_user/lab-files/catalog-service/argocd-application.yaml
     ;;
   *)
     /bin/cat "$@"
