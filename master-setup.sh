@@ -125,8 +125,81 @@ case "$1" in
       else
         echo "Forwarding from 0.0.0.0:8081 -> 80"
         echo "Handling connection for 8081" &
-        # Create a dummy process to hold the port
-        (while true; do sleep 3600; done) >/dev/null 2>&1 &
+        # Create a simple HTTP server on port 8081
+        (while true; do
+          if [ -f /tmp/replica-state ]; then
+            response='<!DOCTYPE html>
+<html>
+<head>
+    <title>CarvedRock Catalog - Black Friday Edition</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f0f0; }
+        h1 { color: #333; }
+        .catalog { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .item { margin: 10px 0; padding: 10px; border-left: 4px solid #28a745; }
+        .version { position: absolute; top: 10px; right: 10px; color: #666; font-size: 12px; }
+        .promo { background: #ff6b6b; color: white; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="version">Version: 2.0.0</div>
+    <h1>CarvedRock Outdoor Gear Catalog - Black Friday Edition</h1>
+    <div class="promo">🎉 BLACK FRIDAY SALE - Up to 50% OFF! 🎉</div>
+    <div class="catalog">
+        <div class="item">
+            <h3>Climbing Gear</h3>
+            <p>Professional climbing equipment - <strong>30% OFF</strong></p>
+        </div>
+        <div class="item">
+            <h3>Hiking Equipment</h3>
+            <p>Everything for your adventure - <strong>40% OFF</strong></p>
+        </div>
+        <div class="item">
+            <h3>Camping Supplies</h3>
+            <p>Quality camping gear - <strong>50% OFF</strong></p>
+        </div>
+        <div class="item">
+            <h3>Winter Collection</h3>
+            <p>NEW! Stay warm this season - <strong>25% OFF</strong></p>
+        </div>
+    </div>
+</body>
+</html>'
+          else
+            response='<!DOCTYPE html>
+<html>
+<head>
+    <title>CarvedRock Catalog</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f0f0; }
+        h1 { color: #333; }
+        .catalog { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .item { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; }
+        .version { position: absolute; top: 10px; right: 10px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="version">Version: 1.0.0</div>
+    <h1>CarvedRock Outdoor Gear Catalog</h1>
+    <div class="catalog">
+        <div class="item">
+            <h3>Climbing Gear</h3>
+            <p>Professional climbing equipment for all skill levels</p>
+        </div>
+        <div class="item">
+            <h3>Hiking Equipment</h3>
+            <p>Everything you need for your next adventure</p>
+        </div>
+        <div class="item">
+            <h3>Camping Supplies</h3>
+            <p>Quality camping gear for the great outdoors</p>
+        </div>
+    </div>
+</body>
+</html>'
+          fi
+          echo -e "HTTP/1.1 200 OK\r\nContent-Length: ${#response}\r\nContent-Type: text/html\r\n\r\n$response" | nc -l -p 8081 -q 1 >/dev/null 2>&1
+        done) >/dev/null 2>&1 &
         echo $! > /tmp/port-forward-8081.pid
       fi
     elif [[ "$*" == *"argocd-server"* ]]; then
@@ -317,105 +390,6 @@ esac
 EOF
 
 chmod +x /usr/local/bin/git
-
-# Create curl command wrapper
-cat > /usr/local/bin/curl << 'EOF'
-#!/bin/bash
-
-if [[ "$*" == *"localhost:8081"* ]]; then
-  if [[ "$*" == *"grep"* ]]; then
-    if [ -f /tmp/replica-state ]; then
-      echo '        <div class="version">Version: 2.0.0</div>'
-      echo '        <title>CarvedRock Catalog - Black Friday Edition</title>'
-      echo '        <div class="promo">🎉 BLACK FRIDAY SALE - Up to 50% OFF! 🎉</div>'
-    else
-      echo '        <div class="version">Version: 1.0.0</div>'
-      echo '        <title>CarvedRock Catalog</title>'
-    fi
-  else
-    if [ -f /tmp/replica-state ]; then
-      cat << 'HTML'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>CarvedRock Catalog - Black Friday Edition</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f0f0; }
-        h1 { color: #333; }
-        .catalog { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .item { margin: 10px 0; padding: 10px; border-left: 4px solid #28a745; }
-        .version { position: absolute; top: 10px; right: 10px; color: #666; font-size: 12px; }
-        .promo { background: #ff6b6b; color: white; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div class="version">Version: 2.0.0</div>
-    <h1>CarvedRock Outdoor Gear Catalog - Black Friday Edition</h1>
-    <div class="promo">🎉 BLACK FRIDAY SALE - Up to 50% OFF! 🎉</div>
-    <div class="catalog">
-        <div class="item">
-            <h3>Climbing Gear</h3>
-            <p>Professional climbing equipment - <strong>30% OFF</strong></p>
-        </div>
-        <div class="item">
-            <h3>Hiking Equipment</h3>
-            <p>Everything for your adventure - <strong>40% OFF</strong></p>
-        </div>
-        <div class="item">
-            <h3>Camping Supplies</h3>
-            <p>Quality camping gear - <strong>50% OFF</strong></p>
-        </div>
-        <div class="item">
-            <h3>Winter Collection</h3>
-            <p>NEW! Stay warm this season - <strong>25% OFF</strong></p>
-        </div>
-    </div>
-</body>
-</html>
-HTML
-    else
-      cat << 'HTML'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>CarvedRock Catalog</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f0f0f0; }
-        h1 { color: #333; }
-        .catalog { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .item { margin: 10px 0; padding: 10px; border-left: 4px solid #007bff; }
-        .version { position: absolute; top: 10px; right: 10px; color: #666; font-size: 12px; }
-    </style>
-</head>
-<body>
-    <div class="version">Version: 1.0.0</div>
-    <h1>CarvedRock Outdoor Gear Catalog</h1>
-    <div class="catalog">
-        <div class="item">
-            <h3>Climbing Gear</h3>
-            <p>Professional climbing equipment for all skill levels</p>
-        </div>
-        <div class="item">
-            <h3>Hiking Equipment</h3>
-            <p>Everything you need for your next adventure</p>
-        </div>
-        <div class="item">
-            <h3>Camping Supplies</h3>
-            <p>Quality camping gear for the great outdoors</p>
-        </div>
-    </div>
-</body>
-</html>
-HTML
-    fi
-  fi
-else
-  # Call real curl for other uses
-  /usr/bin/curl "$@"
-fi
-EOF
-
-chmod +x /usr/local/bin/curl
 
 # Create the setup.sh script
 cat > /home/cloud_user/setup.sh << 'EOF'
@@ -808,4 +782,9 @@ chown -R cloud_user:cloud_user /home/cloud_user/
 
 # Clean up any temp files
 rm -f /tmp/replica-state /tmp/sync-state /tmp/revert-state
+
+# Kill any existing processes on ports 8080 and 8081
+lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+lsof -ti:8081 | xargs kill -9 2>/dev/null || true
+rm -f /tmp/port-forward-*.pid
 EOF
